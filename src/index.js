@@ -9,7 +9,8 @@ const corsOptions = {
   origin: [
     "http://localhost:5173",
     "http://localhost:5175",
-    "https://spa.beyondsoftwares.com"
+    "https://spa.beyondsoftwares.com",
+    "https://delightful-mushroom-08eb7ca0f.6.azurestaticapps.net"
   ],
   credentials: true,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
