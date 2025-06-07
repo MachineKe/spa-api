@@ -84,8 +84,3 @@ jobs:
           app-name: 'spa-api'
           slot-name: 'Production'
           package: .
-
-      - name: Run DB migrations
-        run: |
-          npm install
-          npm run migrate
