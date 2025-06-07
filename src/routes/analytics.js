@@ -1,5 +1,5 @@
 const express = require("express");
-const { Sales, Booking, Employee, Store } = require("../../models");
+const { SalesLog, Booking, Employee, Store } = require("../../models");
 const { authenticateJWT, requireRole } = require("../middleware/auth");
 
 const router = express.Router();
@@ -22,11 +22,11 @@ router.get(
     }
     try {
       // Sales by store
-      const sales = await Sales.findAll({
+      const sales = await SalesLog.findAll({
         where,
         attributes: [
           "storeId",
-          [require("sequelize").fn("sum", require("sequelize").col("amount")), "totalSales"],
+          [require("sequelize").fn("sum", require("sequelize").col("totalPrice")), "totalSales"],
         ],
         group: ["storeId"],
       });
@@ -40,11 +40,11 @@ router.get(
         group: ["storeId"],
       });
       // Employee performance (total sales per employee)
-      const empPerf = await Sales.findAll({
+      const empPerf = await SalesLog.findAll({
         where,
         attributes: [
           "employeeId",
-          [require("sequelize").fn("sum", require("sequelize").col("amount")), "totalSales"],
+          [require("sequelize").fn("sum", require("sequelize").col("totalPrice")), "totalSales"],
         ],
         group: ["employeeId"],
       });

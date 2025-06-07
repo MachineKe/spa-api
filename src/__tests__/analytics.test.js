@@ -7,6 +7,9 @@ describe("Analytics API", () => {
   let token;
   let tenantId;
   beforeAll(async () => {
+    // Sync all models to the database
+    await db.sequelize.sync({ force: true });
+
     // Create a tenant for the test user
     const tenant = await Tenant.create({
       name: "Test Tenant"
@@ -35,6 +38,9 @@ describe("Analytics API", () => {
     const res = await request(app)
       .get("/api/analytics/overview")
       .set("Authorization", `Bearer ${token}`);
+    if (res.statusCode !== 200) {
+      console.log("Analytics overview error:", res.body);
+    }
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty("sales");
     expect(res.body).toHaveProperty("bookings");

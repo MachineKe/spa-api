@@ -11,6 +11,8 @@ module.exports = (sequelize, DataTypes) => {
   SalesLog.init(
     {
       tenantId: DataTypes.INTEGER,
+      storeId: DataTypes.INTEGER,
+      employeeId: DataTypes.INTEGER,
       productId: DataTypes.INTEGER,
       quantity: DataTypes.INTEGER,
       totalPrice: DataTypes.FLOAT,
