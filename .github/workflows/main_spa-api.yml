@@ -60,6 +60,7 @@ jobs:
       SMTP_PASS: ${{ secrets.SMTP_PASS }}
       SMTP_PORT: ${{ secrets.SMTP_PORT }}
       SMTP_USER: ${{ secrets.SMTP_USER }}
+      NODE_ENV: production
 
     steps:
       - name: Download artifact from build job
@@ -69,7 +70,7 @@ jobs:
 
       - name: Unzip artifact for deployment
         run: unzip release.zip
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -84,3 +85,8 @@ jobs:
           app-name: 'spa-api'
           slot-name: 'Production'
           package: .
+
+      - name: Run DB migrations
+        run: |
+          npm install
+          npm run migrate
