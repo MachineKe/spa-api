@@ -218,8 +218,26 @@ router.post(
         },
       });
     } catch (err) {
-      console.error("Registration error:", err);
-      res.status(500).json({ error: 'Failed to register tenant', details: err.message });
+      // Enhanced error logging for diagnostics
+      const errorId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      const safeBody = {
+        name,
+        subdomain,
+        plan,
+        adminUsername,
+        adminEmail,
+        // adminPassword intentionally omitted
+      };
+      console.error(`[${errorId}] Registration error:`, {
+        error: err,
+        stack: err?.stack,
+        requestBody: safeBody,
+      });
+      res.status(500).json({
+        error: 'Failed to register tenant',
+        details: err.message,
+        errorId,
+      });
     }
   }
 );
