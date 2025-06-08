@@ -168,7 +168,7 @@ router.post(
       }
       const { date, status, notes } = req.body;
       const attendance = await Attendance.create({
-        teamMemberId: id,
+        employeeId: id,
         date,
         status,
         notes,
@@ -201,7 +201,7 @@ router.get(
         return res.status(403).json({ error: 'Forbidden' });
       }
       const attendance = await Attendance.findAll({
-        where: { teamMemberId: id },
+        where: { employeeId: id },
         order: [['date', 'DESC']],
       });
       res.json({ attendance });
@@ -240,7 +240,7 @@ router.post(
       }
       const { startDate, endDate, type, reason } = req.body;
       const leave = await LeaveRequest.create({
-        teamMemberId: id,
+        employeeId: id,
         startDate,
         endDate,
         type,
@@ -275,7 +275,7 @@ router.get(
         return res.status(403).json({ error: 'Forbidden' });
       }
       const leaves = await LeaveRequest.findAll({
-        where: { teamMemberId: id },
+        where: { employeeId: id },
         order: [['createdAt', 'DESC']],
       });
       res.json({ leaves });
@@ -307,7 +307,7 @@ router.patch(
         return res.status(403).json({ error: 'Forbidden' });
       }
       const leave = await LeaveRequest.findByPk(requestId);
-      if (!leave || leave.teamMemberId !== parseInt(id, 10)) {
+      if (!leave || leave.employeeId !== parseInt(id, 10)) {
         return res.status(404).json({ error: 'Leave request not found' });
       }
       leave.status = req.body.status;
@@ -338,12 +338,12 @@ router.get(
       const employeeMap = {};
       employees.forEach((e) => (employeeMap[e.id] = e.name));
       const leaves = await LeaveRequest.findAll({
-        where: { teamMemberId: employees.map((e) => e.id) },
+        where: { employeeId: employees.map((e) => e.id) },
         order: [['createdAt', 'DESC']],
       });
       const requests = leaves.map((l) => ({
         ...l.toJSON(),
-        employeeName: employeeMap[l.teamMemberId] || "Unknown",
+        employeeName: employeeMap[l.employeeId] || "Unknown",
       }));
       res.json({ requests });
     } catch (err) {
@@ -376,7 +376,7 @@ router.post(
         return res.status(403).json({ error: 'Forbidden' });
       }
       const doc = await EmployeeDocument.create({
-        teamMemberId: id,
+        employeeId: id,
         filename: req.file.filename,
         originalName: req.file.originalname,
         type: req.file.mimetype,
@@ -422,7 +422,7 @@ router.get(
         return res.status(403).json({ error: 'Forbidden' });
       }
       const docs = await EmployeeDocument.findAll({
-        where: { teamMemberId: id },
+        where: { employeeId: id },
         order: [['createdAt', 'DESC']],
       });
       res.json({ docs });
@@ -453,7 +453,7 @@ router.get(
         return res.status(403).json({ error: 'Forbidden' });
       }
       const doc = await EmployeeDocument.findByPk(docId);
-      if (!doc || doc.teamMemberId !== parseInt(id, 10)) {
+      if (!doc || doc.employeeId !== parseInt(id, 10)) {
         return res.status(404).json({ error: 'Document not found' });
       }
       const filePath = path.join(uploadDir, doc.filename);
