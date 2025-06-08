@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - spa-api
+name: Build and deploy Node.js app to Azure Web App - spa-api2
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read # Required for actions/checkout
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
@@ -45,21 +45,8 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write # Required for requesting the JWT
-      contents: read # Required for actions/checkout
-
-    env:
-      DB_DIALECT: ${{ secrets.DB_DIALECT }}
-      DB_HOST: ${{ secrets.DB_HOST }}
-      DB_NAME: ${{ secrets.DB_NAME }}
-      DB_PASS: ${{ secrets.DB_PASS }}
-      DB_USER: ${{ secrets.DB_USER }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      SMTP_FROM: ${{ secrets.SMTP_FROM }}
-      SMTP_HOST: ${{ secrets.SMTP_HOST }}
-      SMTP_PASS: ${{ secrets.SMTP_PASS }}
-      SMTP_PORT: ${{ secrets.SMTP_PORT }}
-      SMTP_USER: ${{ secrets.SMTP_USER }}
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
@@ -73,14 +60,15 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_DF7EB5EC764C45FA8E5A1310903B2690 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_8386475BCC77426A9302681EBEFEA00B }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_079B801C75804ABFA133D69586EC80DF }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_AFCC03D5141744AAAC2AC0509A3AE59F }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F2355D789BC24454901333CCEB1E33A4 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_A47F369878A2445EA29118D4B5B75A38 }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'spa-api'
+          app-name: 'spa-api2'
           slot-name: 'Production'
           package: .
+          
