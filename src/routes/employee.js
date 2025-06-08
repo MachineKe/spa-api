@@ -49,7 +49,7 @@ router.get(
 router.get(
   '/:id/salary-history',
   authenticateJWT,
-  requireRole(['Admin', 'Manager', 'Staff']),
+  requireRole(['Admin', 'Manager', 'Staff', 'Employee']),
   async (req, res) => {
     const { id } = req.params;
     // Only allow staff to view their own history, or admin/manager for any staff in their tenant
