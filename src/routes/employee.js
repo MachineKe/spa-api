@@ -719,4 +719,66 @@ router.post(
   }
 );
 
+/**
+ * Get employee record by email (for self-service)
+ * GET /employees/by-email/:email
+ */
+router.get(
+  '/by-email/:email',
+  authenticateJWT,
+  async (req, res) => {
+    try {
+      const { email } = req.params;
+      const employee = await Employee.findOne({
+        where: { email, tenantId: req.user.tenantId }
+      });
+      if (!employee) return res.status(404).json({ error: 'Employee not found' });
+      res.json({ employee });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to fetch employee', details: err.message });
+    }
+  }
+);
+
+/**
+ * TEMPORARY DEBUG: List all employees for the current tenant (for debugging email/tenantId issues)
+ * GET /employees/debug-list
+ */
+router.get(
+  '/debug-list',
+  authenticateJWT,
+  async (req, res) => {
+    try {
+      const employees = await Employee.findAll({
+        where: { tenantId: req.user.tenantId },
+        attributes: ['id', 'name', 'email', 'tenantId'],
+        order: [['name', 'ASC']],
+      });
+      res.json({ employees });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to fetch employees', details: err.message });
+    }
+  }
+);
+
+/**
+ * TEMPORARY DEBUG: List all employees in the database (ignore tenantId)
+ * GET /employees/debug-list-all
+ */
+router.get(
+  '/debug-list-all',
+  authenticateJWT,
+  async (req, res) => {
+    try {
+      const employees = await Employee.findAll({
+        attributes: ['id', 'name', 'email', 'tenantId'],
+        order: [['tenantId', 'ASC'], ['name', 'ASC']],
+      });
+      res.json({ employees });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to fetch all employees', details: err.message });
+    }
+  }
+);
+
 module.exports = router;
