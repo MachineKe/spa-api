@@ -19,26 +19,40 @@ router.post(
     body('username').notEmpty(),
     body('email').isEmail(),
     body('password').isLength({ min: 6 }),
-    body('role').isIn(['Admin', 'Manager', 'Staff', 'SuperAdmin']),
+    body('role').isIn(['Admin', 'Manager', 'Staff', 'SuperAdmin', 'Customer']),
     body('tenantId').optional().isInt(),
+    body('tenantIds').optional().isArray(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { username, email, password, role, tenantId } = req.body;
+    const { username, email, password, role, tenantId, tenantIds } = req.body;
 
     try {
       // Check if user exists
       const existing = await User.findOne({ where: { email } });
       if (existing) return res.status(409).json({ error: 'Email already in use' });
 
-      // If not SuperAdmin, tenantId is required
-      if (role !== 'SuperAdmin' && !tenantId)
-        return res.status(400).json({ error: 'tenantId required for non-SuperAdmin' });
+      // For customers, require at least one tenantId (tenantId or tenantIds)
+      let tenantIdList = [];
+      if (role === 'Customer') {
+        if (tenantIds && Array.isArray(tenantIds) && tenantIds.length > 0) {
+          tenantIdList = tenantIds;
+        } else if (tenantId) {
+          tenantIdList = [tenantId];
+        }
+        if (tenantIdList.length === 0)
+          return res.status(400).json({ error: 'At least one tenantId required for Customer' });
 
-      // If tenantId provided, check if tenant exists
-      if (tenantId) {
+        // Check all tenants exist
+        const tenants = await Tenant.findAll({ where: { id: tenantIdList } });
+        if (tenants.length !== tenantIdList.length)
+          return res.status(404).json({ error: 'One or more tenants not found' });
+      } else if (role !== 'SuperAdmin') {
+        // For other roles, require tenantId
+        if (!tenantId)
+          return res.status(400).json({ error: 'tenantId required for non-SuperAdmin' });
         const tenant = await Tenant.findByPk(tenantId);
         if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
       }
@@ -49,8 +63,18 @@ router.post(
         email,
         password: hashed,
         role,
-        tenantId: role === 'SuperAdmin' ? null : tenantId,
+        tenantId: role === 'SuperAdmin' ? null : (role === 'Customer' ? null : tenantId),
       });
+
+      // For customers, create CustomerTenants records
+      if (role === 'Customer' && tenantIdList.length > 0) {
+        const { CustomerTenants } = require("../../models");
+        await Promise.all(
+          tenantIdList.map(tid =>
+            CustomerTenants.create({ userId: user.id, tenantId: tid })
+          )
+        );
+      }
 
       res.status(201).json({ message: 'User registered', user: { id: user.id, email: user.email, role: user.role } });
     } catch (err) {

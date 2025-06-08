@@ -36,6 +36,7 @@ const auditLogRoutes = require('./routes/auditlog');
 const notifyRoutes = require('./routes/notify');
 const analyticsRoutes = require('./routes/analytics');
 const paymentRoutes = require('./routes/payment');
+const servicerequestRoutes = require('./routes/servicerequest');
 const path = require('path');
 
 app.use(express.json());
@@ -71,6 +72,7 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/auditlogs', auditLogRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/superadmin', superAdminRoutes);
+app.use('/api/servicerequests', servicerequestRoutes);
 
 // Serve uploaded images statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

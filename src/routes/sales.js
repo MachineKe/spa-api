@@ -199,4 +199,27 @@ router.get('/export/pdf', authenticateJWT, requireRole(['Admin', 'Manager']), as
   }
 });
 
+/**
+ * Customer: List own purchases
+ * GET /api/sales/my
+ */
+router.get('/my', authenticateJWT, requireRole(['Customer']), async (req, res) => {
+  try {
+    const { SalesLog, Product, CustomerTenants } = require('../../models');
+    // Get tenantIds for this user
+    const links = await CustomerTenants.findAll({ where: { userId: req.user.id } });
+    const tenantIds = links.map(l => l.tenantId);
+    const sales = await SalesLog.findAll({
+      where: {
+        userId: req.user.id,
+        tenantId: tenantIds.length > 0 ? tenantIds : undefined
+      },
+      include: [{ model: Product, attributes: ['name', 'price'] }]
+    });
+    res.json({ sales });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch purchases', details: err.message });
+  }
+});
+
 module.exports = router;

@@ -64,7 +64,7 @@ router.get(
       }
       const payouts = await Payout.findAll({
         where: { employeeId: id },
-        order: [['date', 'DESC']],
+        order: [['paidAt', 'DESC']],
       });
       res.json({ payouts });
     } catch (err) {
@@ -148,7 +148,7 @@ router.post(
 router.post(
   '/:id/attendance',
   authenticateJWT,
-  requireRole(['Admin', 'Manager', 'Staff']),
+  requireRole(['Admin', 'Manager', 'Staff', 'Employee']),
   [
     body('date').notEmpty(),
     body('status').isIn(['present', 'absent', 'late', 'excused']),
@@ -168,7 +168,7 @@ router.post(
       }
       const { date, status, notes } = req.body;
       const attendance = await Attendance.create({
-        employeeId: id,
+        teamMemberId: id,
         date,
         status,
         notes,
@@ -187,7 +187,7 @@ router.post(
 router.get(
   '/:id/attendance',
   authenticateJWT,
-  requireRole(['Admin', 'Manager', 'Staff']),
+  requireRole(['Admin', 'Manager', 'Staff', 'Employee']),
   async (req, res) => {
     const { id } = req.params;
     // Staff can only view their own attendance
@@ -201,7 +201,7 @@ router.get(
         return res.status(403).json({ error: 'Forbidden' });
       }
       const attendance = await Attendance.findAll({
-        where: { employeeId: id },
+        where: { teamMemberId: id },
         order: [['date', 'DESC']],
       });
       res.json({ attendance });
@@ -219,7 +219,7 @@ router.get(
 router.post(
   '/:id/leave-requests',
   authenticateJWT,
-  requireRole(['Admin', 'Manager', 'Staff']),
+  requireRole(['Admin', 'Manager', 'Staff', 'Employee']),
   [
     body('startDate').notEmpty(),
     body('endDate').notEmpty(),
@@ -240,7 +240,7 @@ router.post(
       }
       const { startDate, endDate, type, reason } = req.body;
       const leave = await LeaveRequest.create({
-        employeeId: id,
+        teamMemberId: id,
         startDate,
         endDate,
         type,
@@ -261,7 +261,7 @@ router.post(
 router.get(
   '/:id/leave-requests',
   authenticateJWT,
-  requireRole(['Admin', 'Manager', 'Staff']),
+  requireRole(['Admin', 'Manager', 'Staff', 'Employee']),
   async (req, res) => {
     const { id } = req.params;
     // Staff can only view their own leave requests
@@ -275,7 +275,7 @@ router.get(
         return res.status(403).json({ error: 'Forbidden' });
       }
       const leaves = await LeaveRequest.findAll({
-        where: { employeeId: id },
+        where: { teamMemberId: id },
         order: [['createdAt', 'DESC']],
       });
       res.json({ leaves });
@@ -307,7 +307,7 @@ router.patch(
         return res.status(403).json({ error: 'Forbidden' });
       }
       const leave = await LeaveRequest.findByPk(requestId);
-      if (!leave || leave.employeeId !== parseInt(id, 10)) {
+      if (!leave || leave.teamMemberId !== parseInt(id, 10)) {
         return res.status(404).json({ error: 'Leave request not found' });
       }
       leave.status = req.body.status;
@@ -338,12 +338,12 @@ router.get(
       const employeeMap = {};
       employees.forEach((e) => (employeeMap[e.id] = e.name));
       const leaves = await LeaveRequest.findAll({
-        where: { employeeId: employees.map((e) => e.id) },
+        where: { teamMemberId: employees.map((e) => e.id) },
         order: [['createdAt', 'DESC']],
       });
       const requests = leaves.map((l) => ({
         ...l.toJSON(),
-        employeeName: employeeMap[l.employeeId] || "Unknown",
+        employeeName: employeeMap[l.teamMemberId] || "Unknown",
       }));
       res.json({ requests });
     } catch (err) {
@@ -360,7 +360,7 @@ router.get(
 router.post(
   '/:id/documents',
   authenticateJWT,
-  requireRole(['Admin', 'Manager', 'Staff']),
+  requireRole(['Admin', 'Manager', 'Staff', 'Employee']),
   upload.single('file'),
   async (req, res) => {
     const { id } = req.params;
@@ -408,7 +408,7 @@ router.post(
 router.get(
   '/:id/documents',
   authenticateJWT,
-  requireRole(['Admin', 'Manager', 'Staff']),
+  requireRole(['Admin', 'Manager', 'Staff', 'Employee']),
   async (req, res) => {
     const { id } = req.params;
     // Staff can only view their own documents

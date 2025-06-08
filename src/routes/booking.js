@@ -148,4 +148,104 @@ router.delete(
   }
 );
 
+/**
+ * Customer: Submit a new booking (authenticated, links booking to userId)
+ * POST /booking
+ */
+router.post(
+  '/',
+  authenticateJWT,
+  requireRole(['Customer']),
+  [
+    body('name').notEmpty(),
+    body('email').isEmail(),
+    body('phone').notEmpty(),
+    body('serviceId').isInt(),
+    body('date').isISO8601(),
+    body('time').notEmpty(),
+    body('tenantId').isInt(),
+    body('notes').optional().isString(),
+    body('staffId').optional().isInt(),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { name, email, phone, serviceId, staffId, date, time, notes, tenantId } = req.body;
+    try {
+      // Validate tenant and service
+      const tenant = await Tenant.findByPk(tenantId);
+      if (!tenant || !tenant.isActive) return res.status(404).json({ error: 'Tenant not found' });
+      const service = await Service.findByPk(serviceId);
+      if (!service || service.tenantId !== tenant.id) return res.status(404).json({ error: 'Service not found for tenant' });
+
+      // If staffId provided, validate staff
+      if (staffId) {
+        const staff = await TeamMember.findByPk(staffId);
+        if (!staff || staff.tenantId !== tenant.id) return res.status(404).json({ error: 'Staff not found for tenant' });
+      }
+
+      const booking = await Booking.create({
+        name,
+        email,
+        phone,
+        serviceId,
+        staffId,
+        date,
+        time,
+        notes,
+        tenantId,
+        status: 'pending',
+        userId: req.user.id
+      });
+
+      // Send confirmation email (non-blocking)
+      sendEmail({
+        to: email,
+        subject: `Booking Confirmation - ${tenant.name}`,
+        html: renderEmail({
+          title: "Booking Confirmed",
+          body: `
+            <p>Hi ${name},</p>
+            <p>Your booking for <b>${service.name}</b> on <b>${date}</b> at <b>${time}</b> has been received.</p>
+            <p>We look forward to welcoming you.</p>
+          `,
+          cta: { label: "View Location", url: tenant.mapUrl || "https://fellasspa.com/location" },
+        }),
+      }).catch(() => {});
+
+      res.status(201).json({ message: 'Booking submitted', booking });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to submit booking', details: err.message });
+    }
+  }
+);
+
+/**
+ * Customer: List own bookings
+ * GET /booking/my
+ */
+router.get(
+  '/my',
+  authenticateJWT,
+  requireRole(['Customer']),
+  async (req, res) => {
+    try {
+      const { CustomerTenants } = require("../../models");
+      // Get tenantIds for this user
+      const links = await CustomerTenants.findAll({ where: { userId: req.user.id } });
+      const tenantIds = links.map(l => l.tenantId);
+      const bookings = await Booking.findAll({
+        where: {
+          userId: req.user.id,
+          tenantId: tenantIds.length > 0 ? tenantIds : undefined
+        }
+      });
+      res.json({ bookings });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to fetch bookings', details: err.message });
+    }
+  }
+);
+
 module.exports = router;
