@@ -204,4 +204,111 @@ router.get('/me', authenticateJWT, async (req, res) => {
   res.json({ user: req.user });
 });
 
+/**
+ * Complete registration (set password via registration token)
+ * POST /auth/complete-registration
+ * Body: { token, password }
+ */
+router.post(
+  '/complete-registration',
+  [
+    body('token').notEmpty(),
+    body('password').isLength({ min: 6 }),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { token, password } = req.body;
+    try {
+      const user = await User.findOne({ where: { registrationToken: token } });
+      if (!user) return res.status(400).json({ error: 'Invalid or expired token' });
+      if (!user.registrationTokenExpires || new Date(user.registrationTokenExpires) < new Date()) {
+        return res.status(400).json({ error: 'Token expired' });
+      }
+      user.password = await bcrypt.hash(password, 10);
+      user.registrationToken = null;
+      user.registrationTokenExpires = null;
+      await user.save();
+      res.json({ message: 'Registration complete. You can now log in.' });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to complete registration', details: err.message });
+    }
+  }
+);
+
+/**
+ * Employee registration (set username, phone, password via registration token)
+ * POST /auth/employee-register
+ * Body: { token, username, phone, password }
+ */
+router.post(
+  '/employee-register',
+  [
+    body('token').notEmpty(),
+    body('username').notEmpty(),
+    body('phone').notEmpty(),
+    body('password').isLength({ min: 6 }),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { token, username, phone, password } = req.body;
+    try {
+      const { Employee } = require("../../models");
+      // Find user by registration token
+      let user = await User.findOne({ where: { registrationToken: token } });
+      if (user) {
+        if (!user.registrationTokenExpires || new Date(user.registrationTokenExpires) < new Date()) {
+          return res.status(400).json({ error: 'Token expired' });
+        }
+        if ((user.role || "").toLowerCase() !== "employee") {
+          return res.status(400).json({ error: 'Not an employee registration link' });
+        }
+        user.username = username;
+        user.password = await bcrypt.hash(password, 10);
+        user.registrationToken = null;
+        user.registrationTokenExpires = null;
+        await user.save();
+      } else {
+        // If user not found by token, try to find employee by token (email)
+        const employee = await Employee.findOne({ where: { registrationToken: token } });
+        if (!employee) return res.status(400).json({ error: 'Invalid or expired token' });
+        if (!employee.registrationTokenExpires || new Date(employee.registrationTokenExpires) < new Date()) {
+          return res.status(400).json({ error: 'Token expired' });
+        }
+        // Create user record
+        const hashedPassword = await bcrypt.hash(password, 10);
+        user = await User.create({
+          username,
+          email: employee.email,
+          password: hashedPassword,
+          role: "Employee",
+          tenantId: employee.tenantId,
+          registrationToken: null,
+          registrationTokenExpires: null,
+        });
+        // Clear token from employee record
+        employee.registrationToken = null;
+        employee.registrationTokenExpires = null;
+        employee.contact = phone;
+        await employee.save();
+        return res.json({ message: 'Employee registration complete. You can now log in.' });
+      }
+
+      // Update Employee record with contact/phone if exists
+      const employee = await Employee.findOne({ where: { email: user.email } });
+      if (employee) {
+        employee.contact = phone;
+        await employee.save();
+      }
+
+      res.json({ message: 'Employee registration complete. You can now log in.' });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to complete employee registration', details: err.message });
+    }
+  }
+);
+
 module.exports = router;

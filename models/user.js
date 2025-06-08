@@ -19,7 +19,9 @@ module.exports = (sequelize, DataTypes) => {
     password: DataTypes.STRING,
     role: DataTypes.STRING,
     twoFactorSecret: DataTypes.STRING,
-    tenantId: DataTypes.INTEGER
+    tenantId: DataTypes.INTEGER,
+    registrationToken: DataTypes.STRING,
+    registrationTokenExpires: DataTypes.DATE
   }, {
     sequelize,
     modelName: 'User',

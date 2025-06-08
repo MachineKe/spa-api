@@ -472,6 +472,9 @@ router.get(
  * POST /employees
  * Body: { name, role, contact, email, storeId, photoUrl }
  */
+const crypto = require("crypto");
+const { User } = require("../../models");
+
 router.post(
   '/',
   authenticateJWT,
@@ -487,6 +490,7 @@ router.post(
   async (req, res) => {
     try {
       const { name, role, contact, email, storeId, photoUrl } = req.body;
+      // Create Employee
       const employee = await Employee.create({
         name,
         role,
@@ -496,6 +500,23 @@ router.post(
         photoUrl,
         tenantId: req.user.tenantId,
       });
+
+      // Check if user already exists
+      let user = await User.findOne({ where: { email } });
+      if (!user) {
+        // Generate registration token
+        const registrationToken = crypto.randomBytes(32).toString("hex");
+        const registrationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        user = await User.create({
+          username: name,
+          email,
+          role: "Employee",
+          tenantId: req.user.tenantId,
+          registrationToken,
+          registrationTokenExpires,
+        });
+      }
+
       res.status(201).json({ employee });
     } catch (err) {
       res.status(500).json({ error: 'Failed to create employee', details: err.message });
@@ -643,6 +664,57 @@ router.post(
       res.status(201).json({ workHour });
     } catch (err) {
       res.status(500).json({ error: 'Failed to log hours', details: err.message });
+    }
+  }
+);
+
+/**
+ * Send registration email to employee
+ * POST /employees/:id/send-registration-email
+ * Only Admin/Manager can trigger this.
+ */
+router.post(
+  '/:id/send-registration-email',
+  authenticateJWT,
+  requireRole(['Admin', 'Manager']),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const employee = await Employee.findByPk(id);
+      if (!employee) return res.status(404).json({ error: 'Employee not found' });
+      if (!employee.email) return res.status(400).json({ error: 'Employee has no email address' });
+      const user = await User.findOne({ where: { email: employee.email } });
+      if (!user) return res.status(404).json({ error: 'User not found for employee' });
+
+      // Generate new registration token
+      const registrationToken = require("crypto").randomBytes(32).toString("hex");
+      const registrationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      user.registrationToken = registrationToken;
+      user.registrationTokenExpires = registrationTokenExpires;
+      await user.save();
+
+      // Compose registration link
+      const baseUrl = process.env.FRONTEND_BASE_URL || "https://spa.beyondsoftwares.com";
+      const registrationLink = `${baseUrl}/employee-register?token=${registrationToken}`;
+
+      // Send registration email
+      await sendEmail({
+        to: user.email,
+        subject: "Complete Your Employee Registration",
+        html: renderEmail({
+          title: "Set Your Password",
+          body: `
+            <p>Hello ${employee.name},</p>
+            <p>Your account has been created. Please click the link below to set your password and activate your account:</p>
+            <p><a href="${registrationLink}">${registrationLink}</a></p>
+            <p>This link will expire in 24 hours.</p>
+          `,
+        }),
+      });
+
+      res.json({ message: "Registration email sent" });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to send registration email", details: err.message });
     }
   }
 );

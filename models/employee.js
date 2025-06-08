@@ -25,6 +25,8 @@ module.exports = (sequelize, DataTypes) => {
       photoUrl: DataTypes.STRING,
       tenantId: DataTypes.INTEGER,
       storeId: DataTypes.INTEGER,
+      email: DataTypes.STRING,
+      contact: DataTypes.STRING, // <-- Add this line
       // Sensitive fields (should be encrypted in production)
       salary: DataTypes.FLOAT,
       payoutHistory: DataTypes.JSON,
