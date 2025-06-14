@@ -27,6 +27,7 @@ module.exports = (sequelize, DataTypes) => {
       storeId: DataTypes.INTEGER,
       email: DataTypes.STRING,
       contact: DataTypes.STRING, // <-- Add this line
+      roleDescription: DataTypes.STRING, // Description of the employee role, e.g. Barber, Receptionist
       // Sensitive fields (should be encrypted in production)
       salary: DataTypes.FLOAT,
       payoutHistory: DataTypes.JSON,

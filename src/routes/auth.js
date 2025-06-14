@@ -278,7 +278,7 @@ router.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { token, username, phone, password } = req.body;
+    const { token, username, phone, password, role, roleDescription } = req.body;
     try {
       const { Employee } = require("../../models");
       // Find user by registration token
@@ -292,6 +292,8 @@ router.post(
         }
         user.username = username;
         user.password = await bcrypt.hash(password, 10);
+        if (role) user.role = role;
+        if (roleDescription) user.roleDescription = roleDescription;
         user.registrationToken = null;
         user.registrationTokenExpires = null;
         await user.save();
@@ -334,5 +336,39 @@ router.post(
     }
   }
 );
+
+/**
+ * Get employee registration info by token (for pre-filling registration form)
+ * GET /auth/employee-register-info?token=...
+ */
+router.get('/employee-register-info', async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ error: 'Token required' });
+  try {
+    const { Employee } = require("../../models");
+    let user = await User.findOne({ where: { registrationToken: token } });
+    if (user) {
+      return res.json({
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        roleDescription: user.roleDescription,
+      });
+    }
+    // If not found in User, try Employee
+    const employee = await Employee.findOne({ where: { registrationToken: token } });
+    if (employee) {
+      return res.json({
+        username: employee.name,
+        email: employee.email,
+        role: employee.role,
+        roleDescription: employee.roleDescription,
+      });
+    }
+    return res.status(404).json({ error: 'Invalid or expired token' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch registration info', details: err.message });
+  }
+});
 
 module.exports = router;

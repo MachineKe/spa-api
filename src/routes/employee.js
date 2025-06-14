@@ -486,10 +486,11 @@ router.post(
     body('email').isEmail(),
     body('storeId').optional(),
     body('photoUrl').optional(),
+    body('roleDescription').optional(),
   ],
   async (req, res) => {
     try {
-      const { name, role, contact, email, storeId, photoUrl } = req.body;
+      const { name, role, contact, email, storeId, photoUrl, roleDescription } = req.body;
       // Create Employee
       const employee = await Employee.create({
         name,
@@ -498,6 +499,7 @@ router.post(
         email,
         storeId,
         photoUrl,
+        roleDescription,
         tenantId: req.user.tenantId,
       });
 
@@ -510,11 +512,17 @@ router.post(
         user = await User.create({
           username: name,
           email,
-          role: "Employee",
+          role,
+          roleDescription,
           tenantId: req.user.tenantId,
           registrationToken,
           registrationTokenExpires,
         });
+      } else {
+        // Update role and roleDescription if user already exists
+        user.role = role;
+        user.roleDescription = roleDescription;
+        await user.save();
       }
 
       res.status(201).json({ employee });
@@ -589,8 +597,8 @@ router.put(
       const employee = await Employee.findByPk(id);
       if (!employee) return res.status(404).json({ error: 'Employee not found' });
       if (employee.tenantId !== req.user.tenantId) return res.status(403).json({ error: 'Forbidden' });
-      const { name, role, contact, email, storeId, photoUrl } = req.body;
-      Object.assign(employee, { name, role, contact, email, storeId, photoUrl });
+      const { name, role, contact, email, storeId, photoUrl, roleDescription } = req.body;
+      Object.assign(employee, { name, role, contact, email, storeId, photoUrl, roleDescription });
       await employee.save();
       res.json({ employee });
     } catch (err) {
