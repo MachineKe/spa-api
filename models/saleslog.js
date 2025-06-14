@@ -17,7 +17,12 @@ module.exports = (sequelize, DataTypes) => {
       quantity: DataTypes.INTEGER,
       totalPrice: DataTypes.FLOAT,
       soldAt: DataTypes.DATE,
-      userId: DataTypes.INTEGER
+      userId: DataTypes.INTEGER,
+      transactionId: DataTypes.STRING,
+      status: DataTypes.ENUM('pending', 'approved', 'rejected'),
+      approverId: DataTypes.INTEGER,
+      commissionAmount: DataTypes.FLOAT,
+      approvalNotes: DataTypes.STRING
     },
     {
       sequelize,

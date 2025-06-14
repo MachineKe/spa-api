@@ -222,4 +222,93 @@ router.get('/my', authenticateJWT, requireRole(['Customer']), async (req, res) =
   }
 });
 
+/**
+ * Employee: Record a sale (pending approval)
+ * POST /api/sales/record
+ */
+router.post('/record', authenticateJWT, requireRole(['Employee']), async (req, res) => {
+  try {
+    const { SalesLog, Product, Store, Tenant, Employee } = require('../../models');
+    const { productId, quantity, totalPrice, storeId, transactionId } = req.body;
+    if (!productId || !quantity || !totalPrice || !storeId || !transactionId) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    // Find product and store for tenantId
+    const product = await Product.findByPk(productId);
+    const store = await Store.findByPk(storeId);
+    if (!product || !store) {
+      return res.status(404).json({ error: 'Product or Store not found' });
+    }
+    // Create pending sale
+    const sale = await SalesLog.create({
+      tenantId: store.tenantId,
+      storeId,
+      employeeId: req.user.id,
+      productId,
+      quantity,
+      totalPrice,
+      soldAt: new Date(),
+      userId: null,
+      transactionId,
+      status: 'pending'
+    });
+    res.json({ sale });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to record sale', details: err.message });
+  }
+});
+
+/**
+ * Manager: Approve a sale
+ * PATCH /api/sales/:id/approve
+ */
+router.patch('/:id/approve', authenticateJWT, requireRole(['Manager', 'Admin']), async (req, res) => {
+  try {
+    const { SalesLog, Employee } = require('../../models');
+    const sale = await SalesLog.findByPk(req.params.id);
+    if (!sale) return res.status(404).json({ error: 'Sale not found' });
+    if (sale.status !== 'pending') return res.status(400).json({ error: 'Sale is not pending' });
+
+    // Get employee commission rate (default 10%)
+    const employee = await Employee.findByPk(sale.employeeId);
+    let commissionRate = 0.1;
+    if (employee && employee.commissionRate) {
+      commissionRate = parseFloat(employee.commissionRate) || 0.1;
+    }
+    const commissionAmount = sale.totalPrice * commissionRate;
+
+    sale.status = 'approved';
+    sale.approverId = req.user.id;
+    sale.commissionAmount = commissionAmount;
+    sale.approvalNotes = req.body.notes || null;
+    await sale.save();
+
+    res.json({ sale });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to approve sale', details: err.message });
+  }
+});
+
+/**
+ * Manager: Reject a sale
+ * PATCH /api/sales/:id/reject
+ */
+router.patch('/:id/reject', authenticateJWT, requireRole(['Manager', 'Admin']), async (req, res) => {
+  try {
+    const { SalesLog } = require('../../models');
+    const sale = await SalesLog.findByPk(req.params.id);
+    if (!sale) return res.status(404).json({ error: 'Sale not found' });
+    if (sale.status !== 'pending') return res.status(400).json({ error: 'Sale is not pending' });
+
+    sale.status = 'rejected';
+    sale.approverId = req.user.id;
+    sale.approvalNotes = req.body.notes || null;
+    await sale.save();
+
+    res.json({ sale });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to reject sale', details: err.message });
+  }
+});
+
 module.exports = router;
