@@ -2,11 +2,14 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('Tenants', 'features', {
-      type: Sequelize.JSON,
-      allowNull: false,
-      defaultValue: {},
-    });
+    const table = await queryInterface.describeTable('Tenants');
+    if (!table.features) {
+      await queryInterface.addColumn('Tenants', 'features', {
+        type: Sequelize.JSON,
+        allowNull: false,
+        defaultValue: {},
+      });
+    }
   },
 
   async down(queryInterface, Sequelize) {

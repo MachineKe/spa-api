@@ -3,14 +3,19 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
-    await queryInterface.addColumn('employees', 'salary', {
-      type: Sequelize.FLOAT,
-      allowNull: true,
-    });
-    await queryInterface.addColumn('employees', 'payoutHistory', {
-      type: Sequelize.JSON,
-      allowNull: true,
-    });
+    const table = await queryInterface.describeTable('employees');
+    if (!table.salary) {
+      await queryInterface.addColumn('employees', 'salary', {
+        type: Sequelize.FLOAT,
+        allowNull: true,
+      });
+    }
+    if (!table.payoutHistory) {
+      await queryInterface.addColumn('employees', 'payoutHistory', {
+        type: Sequelize.JSON,
+        allowNull: true,
+      });
+    }
   },
 
   async down (queryInterface, Sequelize) {

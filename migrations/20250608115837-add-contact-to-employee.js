@@ -3,11 +3,14 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
-    // Add contact column to employees table
-    await queryInterface.addColumn('employees', 'contact', {
-      type: Sequelize.STRING,
-      allowNull: true,
-    });
+    // Add contact column to employees table if it doesn't exist
+    const table = await queryInterface.describeTable('employees');
+    if (!table.contact) {
+      await queryInterface.addColumn('employees', 'contact', {
+        type: Sequelize.STRING,
+        allowNull: true,
+      });
+    }
   },
 
   async down (queryInterface, Sequelize) {

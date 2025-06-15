@@ -2,13 +2,16 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.addColumn('ServiceRequests', 'tenantId', {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      references: { model: 'Tenants', key: 'id' },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
-    });
+    const table = await queryInterface.describeTable('ServiceRequests');
+    if (!table.tenantId) {
+      await queryInterface.addColumn('ServiceRequests', 'tenantId', {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: { model: 'Tenants', key: 'id' },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      });
+    }
   },
 
   down: async (queryInterface, Sequelize) => {
