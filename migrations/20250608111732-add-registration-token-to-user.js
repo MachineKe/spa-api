@@ -2,14 +2,20 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('Users', 'registrationToken', {
-      type: Sequelize.STRING,
-      allowNull: true,
-    });
-    await queryInterface.addColumn('Users', 'registrationTokenExpires', {
-      type: Sequelize.DATE,
-      allowNull: true,
-    });
+    // Add registrationToken column if it doesn't exist
+    const table = await queryInterface.describeTable('Users');
+    if (!table.registrationToken) {
+      await queryInterface.addColumn('Users', 'registrationToken', {
+        type: Sequelize.STRING,
+        allowNull: true,
+      });
+    }
+    if (!table.registrationTokenExpires) {
+      await queryInterface.addColumn('Users', 'registrationTokenExpires', {
+        type: Sequelize.DATE,
+        allowNull: true,
+      });
+    }
   },
 
   async down(queryInterface, Sequelize) {
