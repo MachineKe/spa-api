@@ -9,15 +9,17 @@
   "test": {
     "username": "root",
     "password": "",
-    "database": "fellas_spa_test",
+    "database": "spa-database",
     "host": "127.0.0.1",
     "dialect": "mysql"
   },
   "production": {
-    "username": "root",
-    "password": "",
-    "database": "fellas_spa_prod",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
+    "username": "beyondadmin",
+    "password": "MambetNumber1@1",
+    "database": "spa-database",
+    "host": "beyondsoftwaresdb.mysql.database.azure.com",
+    "dialect": "mysql",
+    "port": 3306,
+    "ssl": true
   }
 }
